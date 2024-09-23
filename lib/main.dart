@@ -8,6 +8,7 @@ import 'package:flutter/cupertino.dart';
 import 'favorites_page.dart';
 import 'dart:async';
 import 'widgets/movie_list_item.dart';
+import 'globals.dart';
 
 void main() {
   runApp(const MyApp());
@@ -175,6 +176,11 @@ class _MovieListPageState extends State<MovieListPage> with AutomaticKeepAliveCl
     fetchMovies();
     _scrollController.addListener(_scrollListener);
     _loadFavorites();
+    favoritesStreamController.stream.listen((_) {
+      setState(() {
+        favoriteMovies = globalFavorites;
+      });
+    });
   }
 
   @override
@@ -199,6 +205,7 @@ class _MovieListPageState extends State<MovieListPage> with AutomaticKeepAliveCl
     setState(() {
       favoriteMovies = favorites.map((id) => int.parse(id)).toSet();
     });
+    updateGlobalFavorites(favoriteMovies);
   }
 
   Future<bool> _toggleFavorite(int movieId) async {
@@ -214,6 +221,9 @@ class _MovieListPageState extends State<MovieListPage> with AutomaticKeepAliveCl
     await prefs.setStringList(
         'favorites', favoriteMovies.map((id) => id.toString()).toList());
     print('Saved favorites: ${favoriteMovies.toString()}'); // Debug print
+    
+    updateGlobalFavorites(favoriteMovies);
+    
     return newFavoriteStatus;
   }
 

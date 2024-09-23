@@ -5,6 +5,10 @@ import 'dart:convert';
 import 'movie_details_page.dart';
 import 'config.dart';
 import 'widgets/movie_list_item.dart';
+import 'dart:async';
+import 'globals.dart';
+
+// Remove the favoritesStreamController from this file as it's now in globals.dart
 
 class FavoritesPage extends StatefulWidget {
   const FavoritesPage({Key? key}) : super(key: key);
@@ -21,17 +25,20 @@ class _FavoritesPageState extends State<FavoritesPage> with AutomaticKeepAliveCl
   void initState() {
     super.initState();
     _loadFavoriteMovies();
+    favoritesStreamController.stream.listen((_) {
+      _loadFavoriteMovies();
+    });
   }
 
   Future<void> _loadFavoriteMovies() async {
-    final prefs = await SharedPreferences.getInstance();
-    final favorites = prefs.getStringList('favorites') ?? [];
-    print('Loaded favorites from SharedPreferences: $favorites'); // Debug print
+    setState(() {
+      isLoading = true;
+    });
 
     List<dynamic> movies = [];
-    for (String id in favorites) {
+    for (int id in globalFavorites) {
       print('Fetching details for movie ID: $id'); // Debug print
-      final movie = await _fetchMovieDetails(int.parse(id));
+      final movie = await _fetchMovieDetails(id);
       if (movie != null) {
         movies.add(movie);
         print('Added movie to favorites: ${movie['title']}'); // Debug print
@@ -64,13 +71,14 @@ class _FavoritesPageState extends State<FavoritesPage> with AutomaticKeepAliveCl
 
   Future<void> _removeFromFavorites(int movieId) async {
     final prefs = await SharedPreferences.getInstance();
-    final favorites = prefs.getStringList('favorites') ?? [];
-    favorites.remove(movieId.toString());
-    await prefs.setStringList('favorites', favorites);
+    globalFavorites.remove(movieId);
+    await prefs.setStringList('favorites', globalFavorites.map((id) => id.toString()).toList());
 
     setState(() {
       favoriteMovies.removeWhere((movie) => movie['id'] == movieId);
     });
+
+    updateGlobalFavorites(globalFavorites);
   }
 
   @override
@@ -94,8 +102,8 @@ class _FavoritesPageState extends State<FavoritesPage> with AutomaticKeepAliveCl
         return MovieListItem(
           movie: movie,
           isFavorite: true,
-          onTap: () {
-            Navigator.push(
+          onTap: () async {
+            final newFavoriteStatus = await Navigator.push<bool>(
               context,
               MaterialPageRoute(
                 builder: (context) => MovieDetailsPage(
@@ -108,8 +116,18 @@ class _FavoritesPageState extends State<FavoritesPage> with AutomaticKeepAliveCl
                 ),
               ),
             );
+            if (newFavoriteStatus == false) {
+              setState(() {
+                favoriteMovies.removeWhere((m) => m['id'] == movie['id']);
+              });
+            }
           },
-          onFavoriteToggle: () => _removeFromFavorites(movie['id']),
+          onFavoriteToggle: () async {
+            await _removeFromFavorites(movie['id']);
+            setState(() {
+              favoriteMovies.removeWhere((m) => m['id'] == movie['id']);
+            });
+          },
         );
       },
     );
