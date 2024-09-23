@@ -42,3 +42,6 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 google-services.json
+
+# Ignore config file with API key
+lib/config.dart

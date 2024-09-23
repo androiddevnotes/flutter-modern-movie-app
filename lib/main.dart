@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'movie_details_page.dart';
+import 'config.dart';
 
 void main() {
   runApp(const MyApp());
@@ -67,7 +68,7 @@ class _MovieListPageState extends State<MovieListPage> {
     });
 
     final response = await http.get(Uri.parse(
-        'https://api.themoviedb.org/3/movie/popular?api_key=xxx&page=$currentPage'));
+        'https://api.themoviedb.org/3/movie/popular?api_key=${Config.apiKey}&page=$currentPage'));
 
     if (response.statusCode == 200) {
       setState(() {

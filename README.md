@@ -14,3 +14,8 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+## Setup
+
+1. Copy `lib/config.template.dart` to `lib/config.dart`
+2. Replace `YOUR_API_KEY_HERE` in `lib/config.dart` with your actual TMDB API key
