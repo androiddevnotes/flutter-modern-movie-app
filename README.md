@@ -6,6 +6,11 @@ This Flutter app interacts with The Movie Database (TMDB) API to display and man
 
 ## Current state
 
+
+![App Screenshot](docs/assets/p.png)
+
+
+
 The app offers the following key features:
 
 - Browse movies by different categories (popular, top-rated, upcoming, now playing)
