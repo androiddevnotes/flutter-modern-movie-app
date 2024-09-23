@@ -115,16 +115,12 @@ class _MovieListPageState extends State<MovieListPage> {
 
     String url = 'https://api.themoviedb.org/3/';
 
-    // Use 'discover' endpoint when filters are active or for the 'discover' category
-    if (_filtersActive || currentCategory == 'discover') {
-      url += 'discover/movie';
-    } else {
-      url += 'movie/$currentCategory';
-    }
+    // Always use 'discover' endpoint to apply filters consistently
+    url += 'discover/movie';
 
     url += '?api_key=${Config.apiKey}&page=$currentPage';
 
-    // Apply filters for both 'discover' and other categories
+    // Apply filters for all categories
     if (selectedYear != null) {
       url += '&primary_release_year=$selectedYear';
     }
@@ -136,9 +132,22 @@ class _MovieListPageState extends State<MovieListPage> {
       url += '&with_genres=${genreIds.join(',')}';
     }
 
-    // Apply sort option for 'discover' or when filters are active
-    if (_filtersActive || currentCategory == 'discover') {
-      url += '&sort_by=$currentSortOption';
+    // Apply sort option based on the current category
+    switch (currentCategory) {
+      case 'popular':
+        url += '&sort_by=popularity.desc';
+        break;
+      case 'top_rated':
+        url += '&sort_by=vote_average.desc';
+        break;
+      case 'upcoming':
+        url += '&sort_by=primary_release_date.asc&primary_release_date.gte=${DateTime.now().toString().substring(0, 10)}';
+        break;
+      case 'now_playing':
+        url += '&sort_by=primary_release_date.desc&primary_release_date.lte=${DateTime.now().toString().substring(0, 10)}';
+        break;
+      default:
+        url += '&sort_by=$currentSortOption';
     }
 
     final response = await http.get(Uri.parse(url));
@@ -166,6 +175,7 @@ class _MovieListPageState extends State<MovieListPage> {
       currentCategory = category;
       movies.clear();
       currentPage = 1;
+      // Don't reset filters when changing categories
     });
     fetchMovies();
   }
