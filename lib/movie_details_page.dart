@@ -56,11 +56,15 @@ class _MovieDetailsPageState extends State<MovieDetailsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Image.network(
-              'https://image.tmdb.org/t/p/w500${widget.movie['poster_path']}',
-              width: double.infinity,
-              height: 200,
-              fit: BoxFit.cover,
+            AspectRatio(
+              aspectRatio: 2 / 3, // Typical movie poster aspect ratio
+              child: Image.network(
+                'https://image.tmdb.org/t/p/w500${widget.movie['poster_path']}',
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return Center(child: Icon(Icons.error, size: 50));
+                },
+              ),
             ),
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -69,7 +73,7 @@ class _MovieDetailsPageState extends State<MovieDetailsPage> {
                 children: [
                   Text(
                     widget.movie['title'],
-                    style: Theme.of(context).textTheme.headlineMedium,
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 8),
                   Text(
