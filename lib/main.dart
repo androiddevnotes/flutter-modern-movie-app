@@ -6,6 +6,7 @@ import 'movie_details_page.dart';
 import 'config.dart';
 import 'package:flutter/cupertino.dart';
 import 'favorites_page.dart';
+import 'dart:async';
 
 void main() {
   runApp(const MyApp());
@@ -98,6 +99,10 @@ class _MovieListPageState extends State<MovieListPage> {
   RangeValues _ratingRange = const RangeValues(0, 10);
   List<String> _selectedGenres = [];
   bool _filtersActive = false;
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _debounce;
+  bool _isSearching = false;
+  String _searchQuery = '';
 
   final Map<String, int> _genreMap = {
     "Action": 28,
@@ -122,6 +127,8 @@ class _MovieListPageState extends State<MovieListPage> {
 
   @override
   void dispose() {
+    _searchController.dispose();
+    _debounce?.cancel();
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
     super.dispose();
@@ -158,7 +165,7 @@ class _MovieListPageState extends State<MovieListPage> {
   }
 
   Future<void> fetchMovies() async {
-    if (isLoading) return;
+    if (isLoading || _isSearching) return;
 
     setState(() {
       isLoading = true;
@@ -446,68 +453,149 @@ class _MovieListPageState extends State<MovieListPage> {
     );
   }
 
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      if (query.isNotEmpty) {
+        setState(() {
+          _isSearching = true;
+          _searchQuery = query;
+          movies.clear();
+          currentPage = 1;
+        });
+        _searchMovies(query);
+      } else {
+        setState(() {
+          _isSearching = false;
+          _searchQuery = '';
+          movies.clear();
+          currentPage = 1;
+        });
+        fetchMovies();
+      }
+    });
+  }
+
+  Future<void> _searchMovies(String query) async {
+    if (isLoading) return;
+
+    setState(() {
+      isLoading = true;
+    });
+
+    final response = await http.get(
+      Uri.https('api.themoviedb.org', '/3/search/movie', {
+        'api_key': Config.apiKey,
+        'query': query,
+        'page': currentPage.toString(),
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      setState(() {
+        movies.addAll(json.decode(response.body)['results']);
+        currentPage++;
+        isLoading = false;
+      });
+    } else {
+      setState(() {
+        isLoading = false;
+      });
+      throw Exception('Failed to search movies');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: ListView.builder(
-        controller: _scrollController,
-        itemCount: movies.length + 1,
-        itemBuilder: (context, index) {
-          if (index < movies.length) {
-            final movie = movies[index];
-            final isFavorite = favoriteMovies.contains(movie['id']);
-            return ListTile(
-              leading: movie['poster_path'] != null
-                ? Image.network(
-                    'https://image.tmdb.org/t/p/w92${movie['poster_path']}',
-                    width: 50,
-                    height: 75,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(Icons.error, size: 50);
-                    },
-                  )
-                : const Icon(Icons.movie, size: 50),
-              title: Text(movie['title']),
-              subtitle: Text(movie['release_date'] ?? 'Release date unknown'),
-              trailing: IconButton(
-                icon: Icon(
-                  isFavorite ? Icons.favorite : Icons.favorite_border,
-                  color: isFavorite ? Colors.red : null,
+      appBar: AppBar(
+        title: Text(widget.title),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.filter_list),
+            onPressed: _showFilterBottomSheet,
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search movies...',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                onPressed: () => _toggleFavorite(movie['id']),
               ),
-              onTap: () async {
-                final newFavoriteStatus = await Navigator.push<bool>(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => MovieDetailsPage(
-                      movie: movie,
-                      initialIsFavorite: isFavorite,
-                      onFavoriteToggle: () async {
-                        final newStatus = await _toggleFavorite(movie['id']);
-                        return newStatus;
-                      },
+              onChanged: _onSearchChanged,
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController,
+              itemCount: movies.length + 1,
+              itemBuilder: (context, index) {
+                if (index < movies.length) {
+                  final movie = movies[index];
+                  final isFavorite = favoriteMovies.contains(movie['id']);
+                  return ListTile(
+                    leading: movie['poster_path'] != null
+                      ? Image.network(
+                          'https://image.tmdb.org/t/p/w92${movie['poster_path']}',
+                          width: 50,
+                          height: 75,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(Icons.error, size: 50);
+                          },
+                        )
+                      : const Icon(Icons.movie, size: 50),
+                    title: Text(movie['title']),
+                    subtitle: Text(movie['release_date'] ?? 'Release date unknown'),
+                    trailing: IconButton(
+                      icon: Icon(
+                        isFavorite ? Icons.favorite : Icons.favorite_border,
+                        color: isFavorite ? Colors.red : null,
+                      ),
+                      onPressed: () => _toggleFavorite(movie['id']),
                     ),
-                  ),
-                );
-                if (newFavoriteStatus != null) {
-                  setState(() {
-                    if (newFavoriteStatus) {
-                      favoriteMovies.add(movie['id']);
-                    } else {
-                      favoriteMovies.remove(movie['id']);
-                    }
-                  });
+                    onTap: () async {
+                      final newFavoriteStatus = await Navigator.push<bool>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MovieDetailsPage(
+                            movie: movie,
+                            initialIsFavorite: isFavorite,
+                            onFavoriteToggle: () async {
+                              final newStatus = await _toggleFavorite(movie['id']);
+                              return newStatus;
+                            },
+                          ),
+                        ),
+                      );
+                      if (newFavoriteStatus != null) {
+                        setState(() {
+                          if (newFavoriteStatus) {
+                            favoriteMovies.add(movie['id']);
+                          } else {
+                            favoriteMovies.remove(movie['id']);
+                          }
+                        });
+                      }
+                    },
+                  );
+                } else if (isLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                } else {
+                  return const SizedBox.shrink();
                 }
               },
-            );
-          } else if (isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          } else {
-            return const SizedBox.shrink();
-          }
-        },
+            ),
+          ),
+        ],
       ),
     );
   }
