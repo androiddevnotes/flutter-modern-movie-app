@@ -57,7 +57,7 @@ class _MovieDetailsPageState extends State<MovieDetailsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Image.network(
-              'https://image.tmdb.org/t/p/w500${widget.movie['backdrop_path']}',
+              'https://image.tmdb.org/t/p/w500${widget.movie['poster_path']}',
               width: double.infinity,
               height: 200,
               fit: BoxFit.cover,
