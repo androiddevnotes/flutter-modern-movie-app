@@ -566,6 +566,8 @@ class _MovieListPageState extends State<MovieListPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
       appBar: AppBar(
         title: Text(_title),
@@ -605,13 +607,15 @@ class _MovieListPageState extends State<MovieListPage> {
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Search movies...',
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: Icon(Icons.search, color: isDarkMode ? Colors.white70 : Colors.black54),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
                 filled: true,
-                fillColor: Colors.grey[200],
+                fillColor: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                hintStyle: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black54),
               ),
+              style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
               onChanged: _onSearchChanged,
             ),
           ),
