@@ -26,12 +26,17 @@ class _FavoritesPageState extends State<FavoritesPage> with AutomaticKeepAliveCl
   Future<void> _loadFavoriteMovies() async {
     final prefs = await SharedPreferences.getInstance();
     final favorites = prefs.getStringList('favorites') ?? [];
-    
+    print('Loaded favorites from SharedPreferences: $favorites'); // Debug print
+
     List<dynamic> movies = [];
     for (String id in favorites) {
+      print('Fetching details for movie ID: $id'); // Debug print
       final movie = await _fetchMovieDetails(int.parse(id));
       if (movie != null) {
         movies.add(movie);
+        print('Added movie to favorites: ${movie['title']}'); // Debug print
+      } else {
+        print('Failed to fetch details for movie ID: $id'); // Debug print
       }
     }
 
@@ -39,6 +44,7 @@ class _FavoritesPageState extends State<FavoritesPage> with AutomaticKeepAliveCl
       favoriteMovies = movies;
       isLoading = false;
     });
+    print('Total favorite movies loaded: ${favoriteMovies.length}'); // Debug print
   }
 
   Future<Map<String, dynamic>?> _fetchMovieDetails(int movieId) async {

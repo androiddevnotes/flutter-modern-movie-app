@@ -213,6 +213,7 @@ class _MovieListPageState extends State<MovieListPage> with AutomaticKeepAliveCl
     });
     await prefs.setStringList(
         'favorites', favoriteMovies.map((id) => id.toString()).toList());
+    print('Saved favorites: ${favoriteMovies.toString()}'); // Debug print
     return newFavoriteStatus;
   }
 
