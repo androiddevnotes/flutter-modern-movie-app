@@ -47,6 +47,19 @@ class _MovieListPageState extends State<MovieListPage> {
   RangeValues _ratingRange = const RangeValues(0, 10);
   List<String> _selectedGenres = [];
 
+  final Map<String, int> _genreMap = {
+    "Action": 28,
+    "Adventure": 12,
+    "Animation": 16,
+    "Comedy": 35,
+    "Crime": 80,
+    "Drama": 18,
+    "Fantasy": 14,
+    "Horror": 27,
+    "Romance": 10749,
+    "Science Fiction": 878,
+  };
+
   @override
   void initState() {
     super.initState();
@@ -129,10 +142,7 @@ class _MovieListPageState extends State<MovieListPage> {
   }
 
   Future<List<int>> _getGenreIds(List<String> genreNames) async {
-    // You'll need to implement this method to convert genre names to their corresponding IDs
-    // This might involve making an API call to get the list of genres and their IDs
-    // For now, we'll return an empty list
-    return [];
+    return genreNames.map((name) => _genreMap[name] ?? 0).where((id) => id != 0).toList();
   }
 
   void changeCategory(String category) {
@@ -248,9 +258,7 @@ class _MovieListPageState extends State<MovieListPage> {
                         const SizedBox(height: 10),
                         Wrap(
                           spacing: 10,
-                          children: [
-                            'Action', 'Comedy', 'Drama', 'Sci-Fi', 'Thriller'
-                          ].map((String genre) {
+                          children: _genreMap.keys.map((String genre) {
                             return FilterChip(
                               label: Text(genre),
                               selected: _selectedGenres.contains(genre),
