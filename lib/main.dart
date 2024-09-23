@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'movie_details_page.dart';
 import 'config.dart';
+import 'package:flutter/cupertino.dart';
 
 void main() {
   runApp(const MyApp());
@@ -43,6 +44,8 @@ class _MovieListPageState extends State<MovieListPage> {
   String currentCategory = 'popular';
   String currentSortOption = 'popularity.desc';
   String? selectedYear;
+  RangeValues _ratingRange = const RangeValues(0, 10);
+  List<String> _selectedGenres = [];
 
   @override
   void initState() {
@@ -96,37 +99,17 @@ class _MovieListPageState extends State<MovieListPage> {
       isLoading = true;
     });
 
-    String url;
-    if (selectedYear != null || currentCategory == 'discover') {
-      url = 'https://api.themoviedb.org/3/discover/movie?api_key=${Config.apiKey}&sort_by=$currentSortOption&page=$currentPage';
-      if (selectedYear != null) {
-        url += '&primary_release_year=$selectedYear';
-      }
-      if (currentCategory != 'discover') {
-        // Add category as a filter for discover endpoint
-        switch (currentCategory) {
-          case 'popular':
-            url += '&sort_by=popularity.desc';
-            break;
-          case 'top_rated':
-            url += '&sort_by=vote_average.desc';
-            break;
-          case 'upcoming':
-            final now = DateTime.now();
-            final fromDate = now.toIso8601String().split('T')[0];
-            final toDate = now.add(Duration(days: 90)).toIso8601String().split('T')[0];
-            url += '&primary_release_date.gte=$fromDate&primary_release_date.lte=$toDate';
-            break;
-          case 'now_playing':
-            final now = DateTime.now();
-            final fromDate = now.subtract(Duration(days: 30)).toIso8601String().split('T')[0];
-            final toDate = now.toIso8601String().split('T')[0];
-            url += '&primary_release_date.gte=$fromDate&primary_release_date.lte=$toDate';
-            break;
-        }
-      }
-    } else {
-      url = 'https://api.themoviedb.org/3/movie/$currentCategory?api_key=${Config.apiKey}&page=$currentPage';
+    String url = 'https://api.themoviedb.org/3/discover/movie?api_key=${Config.apiKey}&sort_by=$currentSortOption&page=$currentPage';
+
+    if (selectedYear != null) {
+      url += '&primary_release_year=$selectedYear';
+    }
+
+    url += '&vote_average.gte=${_ratingRange.start}&vote_average.lte=${_ratingRange.end}';
+
+    if (_selectedGenres.isNotEmpty) {
+      final genreIds = await _getGenreIds(_selectedGenres);
+      url += '&with_genres=${genreIds.join(',')}';
     }
 
     final response = await http.get(Uri.parse(url));
@@ -143,6 +126,13 @@ class _MovieListPageState extends State<MovieListPage> {
       });
       throw Exception('Failed to load movies');
     }
+  }
+
+  Future<List<int>> _getGenreIds(List<String> genreNames) async {
+    // You'll need to implement this method to convert genre names to their corresponding IDs
+    // This might involve making an API call to get the list of genres and their IDs
+    // For now, we'll return an empty list
+    return [];
   }
 
   void changeCategory(String category) {
@@ -171,6 +161,136 @@ class _MovieListPageState extends State<MovieListPage> {
       currentPage = 1;
     });
     fetchMovies();
+  }
+
+  void _showFilterBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.75,
+              decoration: BoxDecoration(
+                color: Theme.of(context).canvasColor,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    height: 5,
+                    width: 40,
+                    margin: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2.5),
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        Text(
+                          'Filters',
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Release Year',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 10,
+                          children: List.generate(10, (index) {
+                            final year = DateTime.now().year - index;
+                            return ChoiceChip(
+                              label: Text(year.toString()),
+                              selected: selectedYear == year.toString(),
+                              onSelected: (bool selected) {
+                                setModalState(() {
+                                  selectedYear = selected ? year.toString() : null;
+                                });
+                              },
+                            );
+                          }),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Rating Range',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        RangeSlider(
+                          values: _ratingRange,
+                          min: 0,
+                          max: 10,
+                          divisions: 20,
+                          labels: RangeLabels(
+                            _ratingRange.start.toStringAsFixed(1),
+                            _ratingRange.end.toStringAsFixed(1),
+                          ),
+                          onChanged: (RangeValues values) {
+                            setModalState(() {
+                              _ratingRange = values;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Genres',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 10,
+                          children: [
+                            'Action', 'Comedy', 'Drama', 'Sci-Fi', 'Thriller'
+                          ].map((String genre) {
+                            return FilterChip(
+                              label: Text(genre),
+                              selected: _selectedGenres.contains(genre),
+                              onSelected: (bool selected) {
+                                setModalState(() {
+                                  if (selected) {
+                                    _selectedGenres.add(genre);
+                                  } else {
+                                    _selectedGenres.remove(genre);
+                                  }
+                                });
+                              },
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Apply filters and fetch movies
+                        Navigator.pop(context);
+                        setState(() {
+                          movies.clear();
+                          currentPage = 1;
+                        });
+                        fetchMovies();
+                      },
+                      child: const Text('Apply Filters'),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -249,6 +369,10 @@ class _MovieListPageState extends State<MovieListPage> {
                 ),
               ],
             ),
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            onPressed: _showFilterBottomSheet,
+          ),
         ],
       ),
       body: ListView.builder(
