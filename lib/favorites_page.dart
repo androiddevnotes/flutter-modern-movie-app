@@ -13,7 +13,7 @@ class FavoritesPage extends StatefulWidget {
   _FavoritesPageState createState() => _FavoritesPageState();
 }
 
-class _FavoritesPageState extends State<FavoritesPage> {
+class _FavoritesPageState extends State<FavoritesPage> with AutomaticKeepAliveClientMixin {
   List<dynamic> favoriteMovies = [];
   bool isLoading = true;
 
@@ -68,7 +68,11 @@ class _FavoritesPageState extends State<FavoritesPage> {
   }
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);  // This is important for AutomaticKeepAliveClientMixin
     if (isLoading) {
       return const Center(child: CircularProgressIndicator());
     }

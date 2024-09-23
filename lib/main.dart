@@ -61,29 +61,46 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-  late List<Widget> _widgetOptions;
+  late PageController _pageController;
 
   @override
   void initState() {
     super.initState();
-    _widgetOptions = <Widget>[
-      MovieListPage(initialTitle: 'Movies'),
-      const FavoritesPage(),
-      SettingsPage(setThemeMode: widget.setThemeMode),
-    ];
+    _pageController = PageController(initialPage: _selectedIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
+      _pageController.animateToPage(
+        index,
+        duration: Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: _widgetOptions.elementAt(_selectedIndex),
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+        children: <Widget>[
+          MovieListPage(initialTitle: 'Movies'),
+          const FavoritesPage(),
+          SettingsPage(setThemeMode: widget.setThemeMode),
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
@@ -117,7 +134,7 @@ class MovieListPage extends StatefulWidget {
   State<MovieListPage> createState() => _MovieListPageState();
 }
 
-class _MovieListPageState extends State<MovieListPage> {
+class _MovieListPageState extends State<MovieListPage> with AutomaticKeepAliveClientMixin {
   late String _title;
   List<dynamic> movies = [];
   Set<int> favoriteMovies = {};
@@ -147,6 +164,9 @@ class _MovieListPageState extends State<MovieListPage> {
     "Romance": 10749,
     "Science Fiction": 878,
   };
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -567,6 +587,7 @@ class _MovieListPageState extends State<MovieListPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);  // This is important for AutomaticKeepAliveClientMixin
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     
     return Scaffold(
