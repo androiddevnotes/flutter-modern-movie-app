@@ -71,16 +71,18 @@ class _MovieListPageState extends State<MovieListPage> {
     });
   }
 
-  Future<void> _toggleFavorite(int movieId) async {
+  Future<bool> _toggleFavorite(int movieId) async {
     final prefs = await SharedPreferences.getInstance();
+    final newFavoriteStatus = !favoriteMovies.contains(movieId);
     setState(() {
-      if (favoriteMovies.contains(movieId)) {
-        favoriteMovies.remove(movieId);
-      } else {
+      if (newFavoriteStatus) {
         favoriteMovies.add(movieId);
+      } else {
+        favoriteMovies.remove(movieId);
       }
     });
     await prefs.setStringList('favorites', favoriteMovies.map((id) => id.toString()).toList());
+    return newFavoriteStatus;
   }
 
   Future<void> fetchMovies() async {
@@ -137,17 +139,29 @@ class _MovieListPageState extends State<MovieListPage> {
                 ),
                 onPressed: () => _toggleFavorite(movie['id']),
               ),
-              onTap: () {
-                Navigator.push(
+              onTap: () async {
+                final newFavoriteStatus = await Navigator.push<bool>(
                   context,
                   MaterialPageRoute(
                     builder: (context) => MovieDetailsPage(
                       movie: movie,
-                      isFavorite: isFavorite,
-                      onFavoriteToggle: () => _toggleFavorite(movie['id']),
+                      initialIsFavorite: isFavorite,
+                      onFavoriteToggle: () async {
+                        final newStatus = await _toggleFavorite(movie['id']);
+                        return newStatus;
+                      },
                     ),
                   ),
                 );
+                if (newFavoriteStatus != null) {
+                  setState(() {
+                    if (newFavoriteStatus) {
+                      favoriteMovies.add(movie['id']);
+                    } else {
+                      favoriteMovies.remove(movie['id']);
+                    }
+                  });
+                }
               },
             );
           } else if (isLoading) {
