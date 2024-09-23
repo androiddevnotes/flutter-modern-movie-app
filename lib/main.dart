@@ -174,37 +174,31 @@ class _MovieListPageState extends State<MovieListPage> {
     });
 
     String endpoint;
-    switch (currentCategory) {
-      case 'popular':
-        endpoint = '/3/movie/popular';
-        break;
-      case 'top_rated':
-        endpoint = '/3/movie/top_rated';
-        break;
-      case 'upcoming':
-        endpoint = '/3/movie/upcoming';
-        break;
-      case 'now_playing':
-        endpoint = '/3/movie/now_playing';
-        break;
-      default:
-        endpoint = '/3/discover/movie';
-    }
-
     final Map<String, dynamic> queryParams = {
       'api_key': Config.apiKey,
       'page': currentPage.toString(),
     };
 
-    // Add filters only for the discover endpoint
-    if (endpoint == '/3/discover/movie') {
-      queryParams.addAll({
-        'sort_by': getSortByParam(),
-        'with_genres': _selectedGenres.isNotEmpty ? await _getGenreIds(_selectedGenres).then((ids) => ids.join(',')) : null,
-        'primary_release_year': selectedYear,
-        'vote_average.gte': _ratingRange.start.toString(),
-        'vote_average.lte': _ratingRange.end.toString(),
-      });
+    // Always use discover endpoint to apply filters consistently
+    endpoint = '/3/discover/movie';
+
+    // Add filters for all categories
+    queryParams.addAll({
+      'sort_by': getSortByParam(),
+      'with_genres': _selectedGenres.isNotEmpty ? await _getGenreIds(_selectedGenres).then((ids) => ids.join(',')) : null,
+      'primary_release_year': selectedYear,
+      'vote_average.gte': _ratingRange.start.toString(),
+      'vote_average.lte': _ratingRange.end.toString(),
+    });
+
+    // Add category-specific parameters
+    switch (currentCategory) {
+      case 'upcoming':
+        queryParams['primary_release_date.gte'] = DateTime.now().toString().substring(0, 10);
+        break;
+      case 'now_playing':
+        queryParams['primary_release_date.lte'] = DateTime.now().toString().substring(0, 10);
+        break;
     }
 
     // Remove null values from queryParams
