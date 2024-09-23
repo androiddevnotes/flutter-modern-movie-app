@@ -40,6 +40,8 @@ class _MovieListPageState extends State<MovieListPage> {
   int currentPage = 1;
   bool isLoading = false;
   final ScrollController _scrollController = ScrollController();
+  String currentCategory = 'popular';
+  String currentSortOption = 'popularity.desc';
 
   @override
   void initState() {
@@ -92,8 +94,12 @@ class _MovieListPageState extends State<MovieListPage> {
       isLoading = true;
     });
 
+    final String endpoint = currentCategory == 'discover'
+        ? 'discover/movie'
+        : 'movie/$currentCategory';
+
     final response = await http.get(Uri.parse(
-        'https://api.themoviedb.org/3/discover/movie?api_key=${Config.apiKey}&sort_by=popularity.desc&page=$currentPage'));
+        'https://api.themoviedb.org/3/$endpoint?api_key=${Config.apiKey}&sort_by=$currentSortOption&page=$currentPage'));
 
     if (response.statusCode == 200) {
       setState(() {
@@ -109,12 +115,75 @@ class _MovieListPageState extends State<MovieListPage> {
     }
   }
 
+  void changeCategory(String category) {
+    setState(() {
+      currentCategory = category;
+      movies.clear();
+      currentPage = 1;
+    });
+    fetchMovies();
+  }
+
+  void changeSortOption(String sortOption) {
+    setState(() {
+      currentSortOption = sortOption;
+      movies.clear();
+      currentPage = 1;
+    });
+    fetchMovies();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: changeCategory,
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              const PopupMenuItem<String>(
+                value: 'popular',
+                child: Text('Popular'),
+              ),
+              const PopupMenuItem<String>(
+                value: 'now_playing',
+                child: Text('Now Playing'),
+              ),
+              const PopupMenuItem<String>(
+                value: 'upcoming',
+                child: Text('Upcoming'),
+              ),
+              const PopupMenuItem<String>(
+                value: 'top_rated',
+                child: Text('Top Rated'),
+              ),
+            ],
+          ),
+          if (currentCategory == 'discover')
+            PopupMenuButton<String>(
+              onSelected: changeSortOption,
+              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                const PopupMenuItem<String>(
+                  value: 'popularity.desc',
+                  child: Text('Popularity Descending'),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'popularity.asc',
+                  child: Text('Popularity Ascending'),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'vote_average.desc',
+                  child: Text('Rating Descending'),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'vote_average.asc',
+                  child: Text('Rating Ascending'),
+                ),
+              ],
+            ),
+        ],
       ),
       body: ListView.builder(
         controller: _scrollController,
