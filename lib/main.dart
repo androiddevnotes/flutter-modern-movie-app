@@ -211,6 +211,30 @@ class _MovieListPageState extends State<MovieListPage> {
                         ),
                         const SizedBox(height: 20),
                         Text(
+                          'Genres',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 10,
+                          children: _genreMap.keys.map((String genre) {
+                            return FilterChip(
+                              label: Text(genre),
+                              selected: _selectedGenres.contains(genre),
+                              onSelected: (bool selected) {
+                                setModalState(() {
+                                  if (selected) {
+                                    _selectedGenres.add(genre);
+                                  } else {
+                                    _selectedGenres.remove(genre);
+                                  }
+                                });
+                              },
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
                           'Release Year',
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
@@ -249,30 +273,6 @@ class _MovieListPageState extends State<MovieListPage> {
                               _ratingRange = values;
                             });
                           },
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          'Genres',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 10,
-                          children: _genreMap.keys.map((String genre) {
-                            return FilterChip(
-                              label: Text(genre),
-                              selected: _selectedGenres.contains(genre),
-                              onSelected: (bool selected) {
-                                setModalState(() {
-                                  if (selected) {
-                                    _selectedGenres.add(genre);
-                                  } else {
-                                    _selectedGenres.remove(genre);
-                                  }
-                                });
-                              },
-                            );
-                          }).toList(),
                         ),
                       ],
                     ),
