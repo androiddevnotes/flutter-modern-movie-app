@@ -124,7 +124,7 @@ class _MovieListPageState extends State<MovieListPage> {
 
     url += '?api_key=${Config.apiKey}&page=$currentPage';
 
-    // Apply filters
+    // Apply filters for both 'discover' and other categories
     if (selectedYear != null) {
       url += '&primary_release_year=$selectedYear';
     }
@@ -166,11 +166,6 @@ class _MovieListPageState extends State<MovieListPage> {
       currentCategory = category;
       movies.clear();
       currentPage = 1;
-      // Reset filters when changing categories
-      _filtersActive = false;
-      selectedYear = null;
-      _ratingRange = const RangeValues(0, 10);
-      _selectedGenres = [];
     });
     fetchMovies();
   }
