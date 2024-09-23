@@ -193,167 +193,175 @@ class _MovieListPageState extends State<MovieListPage> {
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
-            return Container(
-              height: MediaQuery.of(context).size.height * 0.75,
-              decoration: BoxDecoration(
-                color: Theme.of(context).canvasColor,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
-              child: Column(
-                children: [
-                  Container(
-                    height: 5,
-                    width: 40,
-                    margin: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2.5),
-                    ),
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.75,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).canvasColor,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
                   ),
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.all(16),
-                      children: [
-                        Text(
-                          'Filters',
-                          style: Theme.of(context).textTheme.headlineSmall,
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          'Genres',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 10,
-                          children: _genreMap.keys.map((String genre) {
-                            return FilterChip(
-                              label: Text(genre),
-                              selected: _selectedGenres.contains(genre),
-                              onSelected: (bool selected) {
-                                setModalState(() {
-                                  if (selected) {
-                                    _selectedGenres.add(genre);
-                                  } else {
-                                    _selectedGenres.remove(genre);
-                                  }
-                                });
-                              },
-                            );
-                          }).toList(),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          'Release Year',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: customYearController,
-                                focusNode: yearFocusNode,
-                                decoration: InputDecoration(
-                                  hintText: 'Enter custom year',
-                                  border: OutlineInputBorder(),
-                                  suffixIcon: IconButton(
-                                    icon: Icon(Icons.check),
-                                    onPressed: () {
-                                      _submitYear();
-                                      setModalState(() {});
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      height: 5,
+                      width: 40,
+                      margin: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2.5),
+                      ),
+                    ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Filters',
+                                style: Theme.of(context).textTheme.headlineSmall,
+                              ),
+                              const SizedBox(height: 20),
+                              Text(
+                                'Genres',
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 10),
+                              Wrap(
+                                spacing: 10,
+                                children: _genreMap.keys.map((String genre) {
+                                  return FilterChip(
+                                    label: Text(genre),
+                                    selected: _selectedGenres.contains(genre),
+                                    onSelected: (bool selected) {
+                                      setModalState(() {
+                                        if (selected) {
+                                          _selectedGenres.add(genre);
+                                        } else {
+                                          _selectedGenres.remove(genre);
+                                        }
+                                      });
                                     },
+                                  );
+                                }).toList(),
+                              ),
+                              const SizedBox(height: 20),
+                              Text(
+                                'Release Year',
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: customYearController,
+                                      focusNode: yearFocusNode,
+                                      decoration: InputDecoration(
+                                        hintText: 'Enter custom year',
+                                        border: OutlineInputBorder(),
+                                        suffixIcon: IconButton(
+                                          icon: Icon(Icons.check),
+                                          onPressed: _submitYear,
+                                        ),
+                                      ),
+                                      keyboardType: TextInputType.number,
+                                      textInputAction: TextInputAction.done,
+                                      onChanged: (value) {
+                                        setModalState(() {
+                                          selectedYear = value.isNotEmpty ? value : null;
+                                        });
+                                      },
+                                      onSubmitted: (_) {
+                                        _submitYear();
+                                        setModalState(() {});
+                                      },
+                                    ),
                                   ),
+                                  const SizedBox(width: 10),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      setModalState(() {
+                                        selectedYear = null;
+                                        customYearController.clear();
+                                        yearFocusNode.unfocus();
+                                      });
+                                    },
+                                    child: Text('Clear'),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Wrap(
+                                spacing: 10,
+                                children: List.generate(10, (index) {
+                                  final year = DateTime.now().year - index;
+                                  return ChoiceChip(
+                                    label: Text(year.toString()),
+                                    selected: selectedYear == year.toString(),
+                                    onSelected: (bool selected) {
+                                      setModalState(() {
+                                        if (selected) {
+                                          selectedYear = year.toString();
+                                          customYearController.text = year.toString();
+                                        } else {
+                                          selectedYear = null;
+                                          customYearController.clear();
+                                        }
+                                      });
+                                    },
+                                  );
+                                }),
+                              ),
+                              const SizedBox(height: 20),
+                              Text(
+                                'Rating Range',
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              RangeSlider(
+                                values: _ratingRange,
+                                min: 0,
+                                max: 10,
+                                divisions: 20,
+                                labels: RangeLabels(
+                                  _ratingRange.start.toStringAsFixed(1),
+                                  _ratingRange.end.toStringAsFixed(1),
                                 ),
-                                keyboardType: TextInputType.number,
-                                onChanged: (value) {
+                                onChanged: (RangeValues values) {
                                   setModalState(() {
-                                    selectedYear = value.isNotEmpty ? value : null;
+                                    _ratingRange = values;
                                   });
                                 },
-                                onSubmitted: (_) {
-                                  _submitYear();
-                                  setModalState(() {});
-                                },
                               ),
-                            ),
-                            const SizedBox(width: 10),
-                            ElevatedButton(
-                              onPressed: () {
-                                setModalState(() {
-                                  selectedYear = null;
-                                  customYearController.clear();
-                                  yearFocusNode.unfocus();
-                                });
-                              },
-                              child: Text('Clear'),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 10,
-                          children: List.generate(10, (index) {
-                            final year = DateTime.now().year - index;
-                            return ChoiceChip(
-                              label: Text(year.toString()),
-                              selected: selectedYear == year.toString(),
-                              onSelected: (bool selected) {
-                                setModalState(() {
-                                  if (selected) {
-                                    selectedYear = year.toString();
-                                    customYearController.text = year.toString();
-                                  } else {
-                                    selectedYear = null;
-                                    customYearController.clear();
-                                  }
-                                });
-                              },
-                            );
-                          }),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          'Rating Range',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        RangeSlider(
-                          values: _ratingRange,
-                          min: 0,
-                          max: 10,
-                          divisions: 20,
-                          labels: RangeLabels(
-                            _ratingRange.start.toStringAsFixed(1),
-                            _ratingRange.end.toStringAsFixed(1),
+                            ],
                           ),
-                          onChanged: (RangeValues values) {
-                            setModalState(() {
-                              _ratingRange = values;
-                            });
-                          },
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // Apply filters and fetch movies
-                        Navigator.pop(context);
-                        setState(() {
-                          movies.clear();
-                          currentPage = 1;
-                        });
-                        fetchMovies();
-                      },
-                      child: const Text('Apply Filters'),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          // Apply filters and fetch movies
+                          Navigator.pop(context);
+                          setState(() {
+                            movies.clear();
+                            currentPage = 1;
+                          });
+                          fetchMovies();
+                        },
+                        child: const Text('Apply Filters'),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           },
