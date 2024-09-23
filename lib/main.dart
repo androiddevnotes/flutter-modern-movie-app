@@ -96,14 +96,37 @@ class _MovieListPageState extends State<MovieListPage> {
       isLoading = true;
     });
 
-    final String endpoint = currentCategory == 'discover'
-        ? 'discover/movie'
-        : 'movie/$currentCategory';
-
-    String url = 'https://api.themoviedb.org/3/$endpoint?api_key=${Config.apiKey}&sort_by=$currentSortOption&page=$currentPage';
-    
-    if (selectedYear != null) {
-      url += '&primary_release_year=$selectedYear';
+    String url;
+    if (selectedYear != null || currentCategory == 'discover') {
+      url = 'https://api.themoviedb.org/3/discover/movie?api_key=${Config.apiKey}&sort_by=$currentSortOption&page=$currentPage';
+      if (selectedYear != null) {
+        url += '&primary_release_year=$selectedYear';
+      }
+      if (currentCategory != 'discover') {
+        // Add category as a filter for discover endpoint
+        switch (currentCategory) {
+          case 'popular':
+            url += '&sort_by=popularity.desc';
+            break;
+          case 'top_rated':
+            url += '&sort_by=vote_average.desc';
+            break;
+          case 'upcoming':
+            final now = DateTime.now();
+            final fromDate = now.toIso8601String().split('T')[0];
+            final toDate = now.add(Duration(days: 90)).toIso8601String().split('T')[0];
+            url += '&primary_release_date.gte=$fromDate&primary_release_date.lte=$toDate';
+            break;
+          case 'now_playing':
+            final now = DateTime.now();
+            final fromDate = now.subtract(Duration(days: 30)).toIso8601String().split('T')[0];
+            final toDate = now.toIso8601String().split('T')[0];
+            url += '&primary_release_date.gte=$fromDate&primary_release_date.lte=$toDate';
+            break;
+        }
+      }
+    } else {
+      url = 'https://api.themoviedb.org/3/movie/$currentCategory?api_key=${Config.apiKey}&page=$currentPage';
     }
 
     final response = await http.get(Uri.parse(url));
@@ -125,6 +148,7 @@ class _MovieListPageState extends State<MovieListPage> {
   void changeCategory(String category) {
     setState(() {
       currentCategory = category;
+      selectedYear = null; // Reset year selection when changing categories
       movies.clear();
       currentPage = 1;
     });
