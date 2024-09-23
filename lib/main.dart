@@ -594,14 +594,16 @@ class _MovieListPageState extends State<MovieListPage> {
                   final isFavorite = favoriteMovies.contains(movie['id']);
                   return ListTile(
                     leading: movie['poster_path'] != null
-                      ? Image.network(
-                          'https://image.tmdb.org/t/p/w92${movie['poster_path']}',
+                      ? SizedBox(
                           width: 50,
                           height: 75,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Icon(Icons.error, size: 50);
-                          },
+                          child: Image.network(
+                            'https://image.tmdb.org/t/p/w92${movie['poster_path']}',
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(Icons.error, size: 50);
+                            },
+                          ),
                         )
                       : const Icon(Icons.movie, size: 50),
                     title: Text(movie['title']),
