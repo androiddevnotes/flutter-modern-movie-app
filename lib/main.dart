@@ -38,7 +38,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
   static const List<Widget> _widgetOptions = <Widget>[
-    MovieListPage(title: 'Popular Movies'),
+    MovieListPage(initialTitle: 'Popular Movies'),
     FavoritesPage(),
     Text('Profile'),
   ];
@@ -79,15 +79,16 @@ class _MainScreenState extends State<MainScreen> {
 }
 
 class MovieListPage extends StatefulWidget {
-  const MovieListPage({super.key, required this.title});
+  const MovieListPage({super.key, required this.initialTitle});
 
-  final String title;
+  final String initialTitle;
 
   @override
   State<MovieListPage> createState() => _MovieListPageState();
 }
 
 class _MovieListPageState extends State<MovieListPage> {
+  late String _title;
   List<dynamic> movies = [];
   Set<int> favoriteMovies = {};
   int currentPage = 1;
@@ -120,6 +121,7 @@ class _MovieListPageState extends State<MovieListPage> {
   @override
   void initState() {
     super.initState();
+    _title = widget.initialTitle;
     fetchMovies();
     _scrollController.addListener(_scrollListener);
     _loadFavorites();
@@ -171,24 +173,44 @@ class _MovieListPageState extends State<MovieListPage> {
       isLoading = true;
     });
 
+    String endpoint;
+    switch (currentCategory) {
+      case 'popular':
+        endpoint = '/3/movie/popular';
+        break;
+      case 'top_rated':
+        endpoint = '/3/movie/top_rated';
+        break;
+      case 'upcoming':
+        endpoint = '/3/movie/upcoming';
+        break;
+      case 'now_playing':
+        endpoint = '/3/movie/now_playing';
+        break;
+      default:
+        endpoint = '/3/discover/movie';
+    }
+
     final Map<String, dynamic> queryParams = {
       'api_key': Config.apiKey,
       'page': currentPage.toString(),
-      'sort_by': getSortByParam(),
-      'with_genres': _selectedGenres.isNotEmpty ? await _getGenreIds(_selectedGenres).then((ids) => ids.join(',')) : null,
-      'primary_release_year': selectedYear,
-      'vote_average.gte': _ratingRange.start.toString(),
-      'vote_average.lte': _ratingRange.end.toString(),
     };
+
+    // Add filters only for the discover endpoint
+    if (endpoint == '/3/discover/movie') {
+      queryParams.addAll({
+        'sort_by': getSortByParam(),
+        'with_genres': _selectedGenres.isNotEmpty ? await _getGenreIds(_selectedGenres).then((ids) => ids.join(',')) : null,
+        'primary_release_year': selectedYear,
+        'vote_average.gte': _ratingRange.start.toString(),
+        'vote_average.lte': _ratingRange.end.toString(),
+      });
+    }
 
     // Remove null values from queryParams
     queryParams.removeWhere((key, value) => value == null);
 
-    final Uri url = Uri.https(
-      'api.themoviedb.org',
-      '/3/discover/movie',
-      queryParams,
-    );
+    final Uri url = Uri.https('api.themoviedb.org', endpoint, queryParams);
 
     final response = await http.get(url);
 
@@ -230,7 +252,21 @@ class _MovieListPageState extends State<MovieListPage> {
       currentCategory = category;
       movies.clear();
       currentPage = 1;
-      // Don't reset filters when changing categories
+      // Update the title based on the selected category
+      switch (category) {
+        case 'popular':
+          _title = 'Popular Movies';
+          break;
+        case 'top_rated':
+          _title = 'Top Rated Movies';
+          break;
+        case 'upcoming':
+          _title = 'Upcoming Movies';
+          break;
+        case 'now_playing':
+          _title = 'Now Playing Movies';
+          break;
+      }
     });
     fetchMovies();
   }
@@ -509,8 +545,29 @@ class _MovieListPageState extends State<MovieListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(_title),
         actions: [
+          PopupMenuButton<String>(
+            onSelected: changeCategory,
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              const PopupMenuItem<String>(
+                value: 'popular',
+                child: Text('Popular'),
+              ),
+              const PopupMenuItem<String>(
+                value: 'top_rated',
+                child: Text('Top Rated'),
+              ),
+              const PopupMenuItem<String>(
+                value: 'upcoming',
+                child: Text('Upcoming'),
+              ),
+              const PopupMenuItem<String>(
+                value: 'now_playing',
+                child: Text('Now Playing'),
+              ),
+            ],
+          ),
           IconButton(
             icon: Icon(Icons.filter_list),
             onPressed: _showFilterBottomSheet,
