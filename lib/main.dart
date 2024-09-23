@@ -113,44 +113,26 @@ class _MovieListPageState extends State<MovieListPage> {
       isLoading = true;
     });
 
-    String url = 'https://api.themoviedb.org/3/';
+    final Map<String, dynamic> queryParams = {
+      'api_key': Config.apiKey,
+      'page': currentPage.toString(),
+      'sort_by': getSortByParam(),
+      'with_genres': _selectedGenres.isNotEmpty ? await _getGenreIds(_selectedGenres).then((ids) => ids.join(',')) : null,
+      'primary_release_year': selectedYear,
+      'vote_average.gte': _ratingRange.start.toString(),
+      'vote_average.lte': _ratingRange.end.toString(),
+    };
 
-    // Always use 'discover' endpoint to apply filters consistently
-    url += 'discover/movie';
+    // Remove null values from queryParams
+    queryParams.removeWhere((key, value) => value == null);
 
-    url += '?api_key=${Config.apiKey}&page=$currentPage';
+    final Uri url = Uri.https(
+      'api.themoviedb.org',
+      '/3/discover/movie',
+      queryParams,
+    );
 
-    // Apply filters for all categories
-    if (selectedYear != null) {
-      url += '&primary_release_year=$selectedYear';
-    }
-
-    url += '&vote_average.gte=${_ratingRange.start}&vote_average.lte=${_ratingRange.end}';
-
-    if (_selectedGenres.isNotEmpty) {
-      final genreIds = await _getGenreIds(_selectedGenres);
-      url += '&with_genres=${genreIds.join(',')}';
-    }
-
-    // Apply sort option based on the current category
-    switch (currentCategory) {
-      case 'popular':
-        url += '&sort_by=popularity.desc';
-        break;
-      case 'top_rated':
-        url += '&sort_by=vote_average.desc';
-        break;
-      case 'upcoming':
-        url += '&sort_by=primary_release_date.asc&primary_release_date.gte=${DateTime.now().toString().substring(0, 10)}';
-        break;
-      case 'now_playing':
-        url += '&sort_by=primary_release_date.desc&primary_release_date.lte=${DateTime.now().toString().substring(0, 10)}';
-        break;
-      default:
-        url += '&sort_by=$currentSortOption';
-    }
-
-    final response = await http.get(Uri.parse(url));
+    final response = await http.get(url);
 
     if (response.statusCode == 200) {
       setState(() {
@@ -163,6 +145,21 @@ class _MovieListPageState extends State<MovieListPage> {
         isLoading = false;
       });
       throw Exception('Failed to load movies');
+    }
+  }
+
+  String getSortByParam() {
+    switch (currentCategory) {
+      case 'popular':
+        return 'popularity.desc';
+      case 'top_rated':
+        return 'vote_average.desc';
+      case 'upcoming':
+        return 'primary_release_date.asc';
+      case 'now_playing':
+        return 'primary_release_date.desc';
+      default:
+        return currentSortOption;
     }
   }
 
