@@ -174,6 +174,18 @@ class _MovieListPageState extends State<MovieListPage> {
   }
 
   void _showFilterBottomSheet() {
+    String? customYear;
+    TextEditingController customYearController = TextEditingController();
+    FocusNode yearFocusNode = FocusNode();
+
+    void _submitYear() {
+      if (customYearController.text.isNotEmpty) {
+        customYear = customYearController.text;
+        selectedYear = customYear;
+      }
+      yearFocusNode.unfocus();
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -239,6 +251,45 @@ class _MovieListPageState extends State<MovieListPage> {
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: customYearController,
+                                focusNode: yearFocusNode,
+                                decoration: InputDecoration(
+                                  hintText: 'Enter custom year',
+                                  border: OutlineInputBorder(),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(Icons.check),
+                                    onPressed: _submitYear,
+                                  ),
+                                ),
+                                keyboardType: TextInputType.number,
+                                onChanged: (value) {
+                                  setModalState(() {
+                                    customYear = value.isNotEmpty ? value : null;
+                                    selectedYear = customYear;
+                                  });
+                                },
+                                onSubmitted: (_) => _submitYear(),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            ElevatedButton(
+                              onPressed: () {
+                                setModalState(() {
+                                  customYear = null;
+                                  customYearController.clear();
+                                  selectedYear = null;
+                                  yearFocusNode.unfocus();
+                                });
+                              },
+                              child: Text('Clear'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
                         Wrap(
                           spacing: 10,
                           children: List.generate(10, (index) {
@@ -249,6 +300,8 @@ class _MovieListPageState extends State<MovieListPage> {
                               onSelected: (bool selected) {
                                 setModalState(() {
                                   selectedYear = selected ? year.toString() : null;
+                                  customYear = null;
+                                  customYearController.clear();
                                 });
                               },
                             );
