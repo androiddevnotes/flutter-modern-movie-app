@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'movie_details_page.dart';
 import 'config.dart';
 import 'package:flutter/cupertino.dart';
+import 'favorites_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -21,7 +22,57 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: const MovieListPage(title: 'Popular Movies'),
+      home: const MainScreen(),
+    );
+  }
+}
+
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
+
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  int _selectedIndex = 0;
+  static const List<Widget> _widgetOptions = <Widget>[
+    MovieListPage(title: 'Popular Movies'),
+    FavoritesPage(),
+    Text('Profile'),
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: _widgetOptions.elementAt(_selectedIndex),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.movie),
+            label: 'Movies',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite),
+            label: 'Favorites',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.blue,
+        onTap: _onItemTapped,
+      ),
     );
   }
 }
@@ -398,88 +449,6 @@ class _MovieListPageState extends State<MovieListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-        actions: [
-          PopupMenuButton<String>(
-            onSelected: changeCategory,
-            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-              const PopupMenuItem<String>(
-                value: 'popular',
-                child: Text('Popular'),
-              ),
-              const PopupMenuItem<String>(
-                value: 'now_playing',
-                child: Text('Now Playing'),
-              ),
-              const PopupMenuItem<String>(
-                value: 'upcoming',
-                child: Text('Upcoming'),
-              ),
-              const PopupMenuItem<String>(
-                value: 'top_rated',
-                child: Text('Top Rated'),
-              ),
-            ],
-          ),
-          PopupMenuButton<String>(
-            onSelected: changeYear,
-            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-              const PopupMenuItem<String>(
-                value: null,
-                child: Text('All Years'),
-              ),
-              ...List.generate(10, (index) {
-                final year = DateTime.now().year - index;
-                return PopupMenuItem<String>(
-                  value: year.toString(),
-                  child: Text(year.toString()),
-                );
-              }),
-            ],
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  const Icon(Icons.calendar_today),
-                  const SizedBox(width: 4),
-                  Text(selectedYear ?? 'All Years'),
-                ],
-              ),
-            ),
-          ),
-          if (currentCategory == 'discover')
-            PopupMenuButton<String>(
-              onSelected: changeSortOption,
-              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                const PopupMenuItem<String>(
-                  value: 'popularity.desc',
-                  child: Text('Popularity Descending'),
-                ),
-                const PopupMenuItem<String>(
-                  value: 'popularity.asc',
-                  child: Text('Popularity Ascending'),
-                ),
-                const PopupMenuItem<String>(
-                  value: 'vote_average.desc',
-                  child: Text('Rating Descending'),
-                ),
-                const PopupMenuItem<String>(
-                  value: 'vote_average.asc',
-                  child: Text('Rating Ascending'),
-                ),
-              ],
-            ),
-          IconButton(
-            icon: Icon(
-              Icons.filter_list,
-              color: _filtersActive ? Colors.blue : null,
-            ),
-            onPressed: _showFilterBottomSheet,
-          ),
-        ],
-      ),
       body: ListView.builder(
         controller: _scrollController,
         itemCount: movies.length + 1,
