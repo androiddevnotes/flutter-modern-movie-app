@@ -2,8 +2,15 @@ import 'package:flutter/material.dart';
 
 class MovieDetailsPage extends StatelessWidget {
   final Map<String, dynamic> movie;
+  final bool isFavorite;
+  final VoidCallback onFavoriteToggle;
 
-  const MovieDetailsPage({Key? key, required this.movie}) : super(key: key);
+  const MovieDetailsPage({
+    Key? key,
+    required this.movie,
+    required this.isFavorite,
+    required this.onFavoriteToggle,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -11,6 +18,15 @@ class MovieDetailsPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(movie['title']),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(
+            icon: Icon(
+              isFavorite ? Icons.favorite : Icons.favorite_border,
+              color: isFavorite ? Colors.red : null,
+            ),
+            onPressed: onFavoriteToggle,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(

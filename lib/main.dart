@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'movie_details_page.dart';
 import 'config.dart';
 
@@ -35,6 +36,7 @@ class MovieListPage extends StatefulWidget {
 
 class _MovieListPageState extends State<MovieListPage> {
   List<dynamic> movies = [];
+  Set<int> favoriteMovies = {};
   int currentPage = 1;
   bool isLoading = false;
   final ScrollController _scrollController = ScrollController();
@@ -44,6 +46,7 @@ class _MovieListPageState extends State<MovieListPage> {
     super.initState();
     fetchMovies();
     _scrollController.addListener(_scrollListener);
+    _loadFavorites();
   }
 
   @override
@@ -58,6 +61,26 @@ class _MovieListPageState extends State<MovieListPage> {
         _scrollController.position.maxScrollExtent) {
       fetchMovies();
     }
+  }
+
+  Future<void> _loadFavorites() async {
+    final prefs = await SharedPreferences.getInstance();
+    final favorites = prefs.getStringList('favorites') ?? [];
+    setState(() {
+      favoriteMovies = favorites.map((id) => int.parse(id)).toSet();
+    });
+  }
+
+  Future<void> _toggleFavorite(int movieId) async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      if (favoriteMovies.contains(movieId)) {
+        favoriteMovies.remove(movieId);
+      } else {
+        favoriteMovies.add(movieId);
+      }
+    });
+    await prefs.setStringList('favorites', favoriteMovies.map((id) => id.toString()).toList());
   }
 
   Future<void> fetchMovies() async {
@@ -96,21 +119,33 @@ class _MovieListPageState extends State<MovieListPage> {
         itemCount: movies.length + 1,
         itemBuilder: (context, index) {
           if (index < movies.length) {
+            final movie = movies[index];
+            final isFavorite = favoriteMovies.contains(movie['id']);
             return ListTile(
               leading: Image.network(
-                'https://image.tmdb.org/t/p/w92${movies[index]['poster_path']}',
+                'https://image.tmdb.org/t/p/w92${movie['poster_path']}',
                 width: 50,
                 height: 75,
                 fit: BoxFit.cover,
               ),
-              title: Text(movies[index]['title']),
-              subtitle: Text(movies[index]['release_date']),
+              title: Text(movie['title']),
+              subtitle: Text(movie['release_date']),
+              trailing: IconButton(
+                icon: Icon(
+                  isFavorite ? Icons.favorite : Icons.favorite_border,
+                  color: isFavorite ? Colors.red : null,
+                ),
+                onPressed: () => _toggleFavorite(movie['id']),
+              ),
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                        MovieDetailsPage(movie: movies[index]),
+                    builder: (context) => MovieDetailsPage(
+                      movie: movie,
+                      isFavorite: isFavorite,
+                      onFavoriteToggle: () => _toggleFavorite(movie['id']),
+                    ),
                   ),
                 );
               },
