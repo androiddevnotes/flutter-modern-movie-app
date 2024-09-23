@@ -46,6 +46,7 @@ class _MovieListPageState extends State<MovieListPage> {
   String? selectedYear;
   RangeValues _ratingRange = const RangeValues(0, 10);
   List<String> _selectedGenres = [];
+  bool _filtersActive = false;
 
   final Map<String, int> _genreMap = {
     "Action": 28,
@@ -112,8 +113,18 @@ class _MovieListPageState extends State<MovieListPage> {
       isLoading = true;
     });
 
-    String url = 'https://api.themoviedb.org/3/discover/movie?api_key=${Config.apiKey}&sort_by=$currentSortOption&page=$currentPage';
+    String url = 'https://api.themoviedb.org/3/';
 
+    // Use 'discover' endpoint when filters are active or for the 'discover' category
+    if (_filtersActive || currentCategory == 'discover') {
+      url += 'discover/movie';
+    } else {
+      url += 'movie/$currentCategory';
+    }
+
+    url += '?api_key=${Config.apiKey}&page=$currentPage';
+
+    // Apply filters
     if (selectedYear != null) {
       url += '&primary_release_year=$selectedYear';
     }
@@ -123,6 +134,11 @@ class _MovieListPageState extends State<MovieListPage> {
     if (_selectedGenres.isNotEmpty) {
       final genreIds = await _getGenreIds(_selectedGenres);
       url += '&with_genres=${genreIds.join(',')}';
+    }
+
+    // Apply sort option for 'discover' or when filters are active
+    if (_filtersActive || currentCategory == 'discover') {
+      url += '&sort_by=$currentSortOption';
     }
 
     final response = await http.get(Uri.parse(url));
@@ -148,9 +164,13 @@ class _MovieListPageState extends State<MovieListPage> {
   void changeCategory(String category) {
     setState(() {
       currentCategory = category;
-      selectedYear = null; // Reset year selection when changing categories
       movies.clear();
       currentPage = 1;
+      // Reset filters when changing categories
+      _filtersActive = false;
+      selectedYear = null;
+      _ratingRange = const RangeValues(0, 10);
+      _selectedGenres = [];
     });
     fetchMovies();
   }
@@ -354,6 +374,9 @@ class _MovieListPageState extends State<MovieListPage> {
                           setState(() {
                             movies.clear();
                             currentPage = 1;
+                            _filtersActive = selectedYear != null || 
+                                             _ratingRange != const RangeValues(0, 10) || 
+                                             _selectedGenres.isNotEmpty;
                           });
                           fetchMovies();
                         },
@@ -447,7 +470,10 @@ class _MovieListPageState extends State<MovieListPage> {
               ],
             ),
           IconButton(
-            icon: const Icon(Icons.filter_list),
+            icon: Icon(
+              Icons.filter_list,
+              color: _filtersActive ? Colors.blue : null,
+            ),
             onPressed: _showFilterBottomSheet,
           ),
         ],
