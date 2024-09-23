@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'movie_details_page.dart';
 import 'config.dart';
+import 'widgets/movie_list_item.dart';
 
 class FavoritesPage extends StatefulWidget {
   const FavoritesPage({Key? key}) : super(key: key);
@@ -80,24 +81,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
       itemCount: favoriteMovies.length,
       itemBuilder: (context, index) {
         final movie = favoriteMovies[index];
-        return ListTile(
-          leading: movie['poster_path'] != null
-            ? Image.network(
-                'https://image.tmdb.org/t/p/w92${movie['poster_path']}',
-                width: 50,
-                height: 75,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Icon(Icons.error, size: 50);
-                },
-              )
-            : const Icon(Icons.movie, size: 50),
-          title: Text(movie['title']),
-          subtitle: Text(movie['release_date'] ?? 'Release date unknown'),
-          trailing: IconButton(
-            icon: const Icon(Icons.favorite, color: Colors.red),
-            onPressed: () => _removeFromFavorites(movie['id']),
-          ),
+        return MovieListItem(
+          movie: movie,
+          isFavorite: true,
           onTap: () {
             Navigator.push(
               context,
@@ -113,6 +99,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
               ),
             );
           },
+          onFavoriteToggle: () => _removeFromFavorites(movie['id']),
         );
       },
     );

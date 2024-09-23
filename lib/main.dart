@@ -7,6 +7,7 @@ import 'config.dart';
 import 'package:flutter/cupertino.dart';
 import 'favorites_page.dart';
 import 'dart:async';
+import 'widgets/movie_list_item.dart';
 
 void main() {
   runApp(const MyApp());
@@ -66,7 +67,7 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _widgetOptions = <Widget>[
-      MovieListPage(initialTitle: 'Popular Movies'),
+      MovieListPage(initialTitle: 'Movies'),
       const FavoritesPage(),
       SettingsPage(setThemeMode: widget.setThemeMode),
     ];
@@ -627,7 +628,9 @@ class _MovieListPageState extends State<MovieListPage> {
                 if (index < movies.length) {
                   final movie = movies[index];
                   final isFavorite = favoriteMovies.contains(movie['id']);
-                  return GestureDetector(
+                  return MovieListItem(
+                    movie: movie,
+                    isFavorite: isFavorite,
                     onTap: () async {
                       final newFavoriteStatus = await Navigator.push<bool>(
                         context,
@@ -652,76 +655,7 @@ class _MovieListPageState extends State<MovieListPage> {
                         });
                       }
                     },
-                    child: Card(
-                      margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: movie['poster_path'] != null
-                                  ? Image.network(
-                                      'https://image.tmdb.org/t/p/w92${movie['poster_path']}',
-                                      width: 60,
-                                      height: 90,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return const Icon(Icons.movie, size: 60);
-                                      },
-                                    )
-                                  : const Icon(Icons.movie, size: 60),
-                            ),
-                            SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    movie['title'],
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      Icon(Icons.star, color: Colors.amber, size: 16),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        '${movie['vote_average']}',
-                                        style: TextStyle(fontSize: 14),
-                                      ),
-                                      SizedBox(width: 12),
-                                      Text(
-                                        movie['release_date'] ?? 'Unknown',
-                                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    movie['overview'] ?? '',
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                isFavorite ? Icons.favorite : Icons.favorite_border,
-                                color: isFavorite ? Colors.red : null,
-                              ),
-                              onPressed: () => _toggleFavorite(movie['id']),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    onFavoriteToggle: () => _toggleFavorite(movie['id']),
                   );
                 } else if (isLoading) {
                   return const Center(child: CircularProgressIndicator());
