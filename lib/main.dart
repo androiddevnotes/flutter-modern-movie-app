@@ -174,14 +174,14 @@ class _MovieListPageState extends State<MovieListPage> {
   }
 
   void _showFilterBottomSheet() {
-    String? customYear;
-    TextEditingController customYearController = TextEditingController();
+    TextEditingController customYearController = TextEditingController(text: selectedYear);
     FocusNode yearFocusNode = FocusNode();
 
     void _submitYear() {
       if (customYearController.text.isNotEmpty) {
-        customYear = customYearController.text;
-        selectedYear = customYear;
+        selectedYear = customYearController.text;
+      } else {
+        selectedYear = null;
       }
       yearFocusNode.unfocus();
     }
@@ -262,26 +262,30 @@ class _MovieListPageState extends State<MovieListPage> {
                                   border: OutlineInputBorder(),
                                   suffixIcon: IconButton(
                                     icon: Icon(Icons.check),
-                                    onPressed: _submitYear,
+                                    onPressed: () {
+                                      _submitYear();
+                                      setModalState(() {});
+                                    },
                                   ),
                                 ),
                                 keyboardType: TextInputType.number,
                                 onChanged: (value) {
                                   setModalState(() {
-                                    customYear = value.isNotEmpty ? value : null;
-                                    selectedYear = customYear;
+                                    selectedYear = value.isNotEmpty ? value : null;
                                   });
                                 },
-                                onSubmitted: (_) => _submitYear(),
+                                onSubmitted: (_) {
+                                  _submitYear();
+                                  setModalState(() {});
+                                },
                               ),
                             ),
                             const SizedBox(width: 10),
                             ElevatedButton(
                               onPressed: () {
                                 setModalState(() {
-                                  customYear = null;
-                                  customYearController.clear();
                                   selectedYear = null;
+                                  customYearController.clear();
                                   yearFocusNode.unfocus();
                                 });
                               },
@@ -299,9 +303,13 @@ class _MovieListPageState extends State<MovieListPage> {
                               selected: selectedYear == year.toString(),
                               onSelected: (bool selected) {
                                 setModalState(() {
-                                  selectedYear = selected ? year.toString() : null;
-                                  customYear = null;
-                                  customYearController.clear();
+                                  if (selected) {
+                                    selectedYear = year.toString();
+                                    customYearController.text = year.toString();
+                                  } else {
+                                    selectedYear = null;
+                                    customYearController.clear();
+                                  }
                                 });
                               },
                             );
