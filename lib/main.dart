@@ -42,6 +42,7 @@ class _MovieListPageState extends State<MovieListPage> {
   final ScrollController _scrollController = ScrollController();
   String currentCategory = 'popular';
   String currentSortOption = 'popularity.desc';
+  String? selectedYear;
 
   @override
   void initState() {
@@ -83,7 +84,8 @@ class _MovieListPageState extends State<MovieListPage> {
         favoriteMovies.remove(movieId);
       }
     });
-    await prefs.setStringList('favorites', favoriteMovies.map((id) => id.toString()).toList());
+    await prefs.setStringList(
+        'favorites', favoriteMovies.map((id) => id.toString()).toList());
     return newFavoriteStatus;
   }
 
@@ -98,8 +100,13 @@ class _MovieListPageState extends State<MovieListPage> {
         ? 'discover/movie'
         : 'movie/$currentCategory';
 
-    final response = await http.get(Uri.parse(
-        'https://api.themoviedb.org/3/$endpoint?api_key=${Config.apiKey}&sort_by=$currentSortOption&page=$currentPage'));
+    String url = 'https://api.themoviedb.org/3/$endpoint?api_key=${Config.apiKey}&sort_by=$currentSortOption&page=$currentPage';
+    
+    if (selectedYear != null) {
+      url += '&primary_release_year=$selectedYear';
+    }
+
+    final response = await http.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
       setState(() {
@@ -133,6 +140,15 @@ class _MovieListPageState extends State<MovieListPage> {
     fetchMovies();
   }
 
+  void changeYear(String? year) {
+    setState(() {
+      selectedYear = year;
+      movies.clear();
+      currentPage = 1;
+    });
+    fetchMovies();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -160,6 +176,32 @@ class _MovieListPageState extends State<MovieListPage> {
                 child: Text('Top Rated'),
               ),
             ],
+          ),
+          PopupMenuButton<String>(
+            onSelected: changeYear,
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              const PopupMenuItem<String>(
+                value: null,
+                child: Text('All Years'),
+              ),
+              ...List.generate(10, (index) {
+                final year = DateTime.now().year - index;
+                return PopupMenuItem<String>(
+                  value: year.toString(),
+                  child: Text(year.toString()),
+                );
+              }),
+            ],
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  const Icon(Icons.calendar_today),
+                  const SizedBox(width: 4),
+                  Text(selectedYear ?? 'All Years'),
+                ],
+              ),
+            ),
           ),
           if (currentCategory == 'discover')
             PopupMenuButton<String>(
